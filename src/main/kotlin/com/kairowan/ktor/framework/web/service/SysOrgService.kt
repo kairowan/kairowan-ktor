@@ -124,13 +124,14 @@ class SysPostService(private val database: Database) {
      * 查询岗位列表
      */
     suspend fun list(page: KPageRequest? = null): KTableData = withContext(Dispatchers.IO) {
+        val safePage = page?.normalized()
         val query = database.from(SysPosts)
             .select()
             .orderBy(SysPosts.postSort.asc())
 
-        if (page != null) {
-            val offset = page.getOffset()
-            query.limit(offset, page.pageSize)
+        if (safePage != null) {
+            val offset = safePage.getOffset()
+            query.limit(offset, safePage.pageSize)
 
             val total = database.from(SysPosts).select(count()).map { it.getInt(1) }.first().toLong()
             val list = query.map { SysPosts.createEntity(it) }

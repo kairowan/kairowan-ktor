@@ -16,4 +16,19 @@ data class KPageRequest(
     fun getOffset(): Int {
         return (pageNum - 1) * pageSize
     }
+
+    fun normalized(maxPageSize: Int = 200): KPageRequest {
+        val safePageNum = if (pageNum < 1) 1 else pageNum
+        val safePageSize = pageSize.coerceIn(1, maxPageSize)
+        val safeOrderBy = orderByColumn
+            ?.trim()
+            ?.takeIf { it.matches(Regex("^[A-Za-z0-9_]+$")) }
+        val safeIsAsc = if (isAsc?.lowercase() == "desc") "desc" else "asc"
+        return copy(
+            pageNum = safePageNum,
+            pageSize = safePageSize,
+            orderByColumn = safeOrderBy,
+            isAsc = safeIsAsc
+        )
+    }
 }

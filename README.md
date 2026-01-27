@@ -3,6 +3,14 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Kotlin-1.9.22-blue.svg" alt="Kotlin">
   <img src="https://img.shields.io/badge/Ktor-2.3.7-orange.svg" alt="Ktor">
+## Module Scaffold
+
+Generate a new module skeleton with the built-in scaffolder:
+
+```bash
+kotlin -classpath build/classes/kotlin/main com.kairowan.ktor.generator.ModuleScaffold inventory com.kairowan.ktor.modules src/main/kotlin
+```
+
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
 </p>
 

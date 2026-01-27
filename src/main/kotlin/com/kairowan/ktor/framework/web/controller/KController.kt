@@ -37,7 +37,7 @@ open class KController {
         val orderBy = call.parameters["orderByColumn"]
         val isAsc = call.parameters["isAsc"]
         
-        return KPageRequest(pageNum, pageSize, orderBy, isAsc)
+        return KPageRequest(pageNum, pageSize, orderBy, isAsc).normalized()
     }
 
     /**

@@ -1,11 +1,11 @@
 package com.kairowan.ktor.framework.web.service
 
-import com.kairowan.ktor.common.utils.RedisUtils
+import com.kairowan.ktor.core.cache.CacheProvider
+import com.kairowan.ktor.core.database.DatabaseProvider
 import com.kairowan.ktor.framework.web.domain.SysConfig
 import com.kairowan.ktor.framework.web.domain.SysConfigs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.ktorm.database.Database
 import org.ktorm.dsl.eq
 import org.ktorm.entity.find
 import org.ktorm.entity.sequenceOf
@@ -15,7 +15,12 @@ import org.ktorm.entity.sequenceOf
  * @author Kairowan
  * @date 2026-01-18
  */
-class SysConfigService(private val database: Database) : KService<SysConfig>(database, SysConfigs) {
+class SysConfigService(
+    private val databaseProvider: DatabaseProvider,
+    private val cache: CacheProvider
+) : KService<SysConfig>(databaseProvider.database, SysConfigs) {
+
+    private val database get() = databaseProvider.database
 
     companion object {
         private const val CACHE_PREFIX = "sys_config:"
@@ -26,7 +31,7 @@ class SysConfigService(private val database: Database) : KService<SysConfig>(dat
      */
     suspend fun getConfigValue(configKey: String): String? {
         // 先从缓存获取
-        val cached = RedisUtils.get("$CACHE_PREFIX$configKey")
+        val cached = cache.get("$CACHE_PREFIX$configKey")
         if (cached != null) {
             return cached
         }
@@ -38,7 +43,7 @@ class SysConfigService(private val database: Database) : KService<SysConfig>(dat
         
         config?.let {
             // 写入缓存
-            RedisUtils.set("$CACHE_PREFIX$configKey", it.configValue)
+            cache.set("$CACHE_PREFIX$configKey", it.configValue)
         }
         
         return config?.configValue
@@ -55,13 +60,13 @@ class SysConfigService(private val database: Database) : KService<SysConfig>(dat
      * 刷新配置缓存
      */
     fun refreshCache(configKey: String, configValue: String) {
-        RedisUtils.set("$CACHE_PREFIX$configKey", configValue)
+        cache.set("$CACHE_PREFIX$configKey", configValue)
     }
 
     /**
      * 清除配置缓存
      */
     fun clearCache(configKey: String) {
-        RedisUtils.del("$CACHE_PREFIX$configKey")
+        cache.delete("$CACHE_PREFIX$configKey")
     }
 }

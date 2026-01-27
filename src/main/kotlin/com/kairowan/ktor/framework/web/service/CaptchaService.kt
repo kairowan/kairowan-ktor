@@ -1,6 +1,6 @@
 package com.kairowan.ktor.framework.web.service
 
-import com.kairowan.ktor.common.utils.RedisUtils
+import com.kairowan.ktor.core.cache.CacheProvider
 import java.awt.Color
 import java.awt.Font
 import java.awt.image.BufferedImage
@@ -13,11 +13,11 @@ import javax.imageio.ImageIO
  * @author Kairowan
  * @date 2026-01-18
  */
-class CaptchaService {
+class CaptchaService(private val cache: CacheProvider) {
 
     companion object {
         private const val CAPTCHA_PREFIX = "captcha:"
-        private const val CAPTCHA_EXPIRE_SECONDS = 300L // 5分钟
+        private const val CAPTCHA_EXPIRE_SECONDS = 300 // 5分钟
         private const val CAPTCHA_LENGTH = 4
         private const val IMAGE_WIDTH = 120
         private const val IMAGE_HEIGHT = 40
@@ -34,8 +34,8 @@ class CaptchaService {
         val uuid = UUID.randomUUID().toString()
         val code = generateCode()
         
-        // 存入 Redis
-        RedisUtils.setex("$CAPTCHA_PREFIX$uuid", CAPTCHA_EXPIRE_SECONDS.toInt(), code.lowercase())
+        // 存入缓存
+        cache.set("$CAPTCHA_PREFIX$uuid", code.lowercase(), CAPTCHA_EXPIRE_SECONDS)
         
         // 生成图片
         val imageBase64 = generateImage(code)
@@ -55,10 +55,10 @@ class CaptchaService {
         }
         
         val key = "$CAPTCHA_PREFIX$uuid"
-        val cachedCode = RedisUtils.get(key) ?: return false
+        val cachedCode = cache.get(key) ?: return false
         
         // 验证后删除，一次性使用
-        RedisUtils.del(key)
+        cache.delete(key)
         
         return cachedCode.equals(code, ignoreCase = true)
     }

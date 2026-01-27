@@ -1,14 +1,13 @@
 package com.kairowan.ktor.framework.web.service
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.kairowan.ktor.common.utils.RedisUtils
+import com.kairowan.ktor.core.cache.CacheProvider
+import com.kairowan.ktor.core.database.DatabaseProvider
 import com.kairowan.ktor.framework.web.domain.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.ktorm.database.Database
 import org.ktorm.dsl.eq
 import org.ktorm.entity.filter
-import org.ktorm.entity.find
 import org.ktorm.entity.sequenceOf
 import org.ktorm.entity.toList
 
@@ -17,7 +16,11 @@ import org.ktorm.entity.toList
  * @author Kairowan
  * @date 2026-01-18
  */
-class SysDictService(private val database: Database) {
+class SysDictService(
+    private val databaseProvider: DatabaseProvider,
+    private val cache: CacheProvider
+) {
+    private val database get() = databaseProvider.database
 
     companion object {
         private const val CACHE_PREFIX = "sys_dict:"
@@ -29,7 +32,7 @@ class SysDictService(private val database: Database) {
      */
     suspend fun getDictDataByType(dictType: String): List<SysDictData> {
         // 先从缓存获取
-        val cached = RedisUtils.get("$CACHE_PREFIX$dictType")
+        val cached = cache.get("$CACHE_PREFIX$dictType")
         if (cached != null) {
             return try {
                 val voList: List<DictDataVo> = mapper.readValue(
@@ -67,7 +70,7 @@ class SysDictService(private val database: Database) {
         // 写入缓存
         if (list.isNotEmpty()) {
             val voList = list.map { DictDataVo.from(it) }
-            RedisUtils.set("$CACHE_PREFIX$dictType", mapper.writeValueAsString(voList))
+            cache.set("$CACHE_PREFIX$dictType", mapper.writeValueAsString(voList))
         }
         
         return list
@@ -96,7 +99,7 @@ class SysDictService(private val database: Database) {
      * 刷新字典缓存
      */
     fun refreshCache(dictType: String) {
-        RedisUtils.del("$CACHE_PREFIX$dictType")
+        cache.delete("$CACHE_PREFIX$dictType")
     }
 }
 

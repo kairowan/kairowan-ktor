@@ -26,12 +26,16 @@ class TokenService(config: ApplicationConfig) {
      * 生成 Token
      */
     fun createToken(user: LoginUser): String {
+        val tokenId = UUID.randomUUID().toString()
         return JWT.create()
             .withSubject("Authentication")
             .withIssuer(issuer)
             .withAudience(audience)
+            .withJWTId(tokenId)
             .withClaim("userId", user.userId)
             .withClaim("username", user.username)
+            .withArrayClaim("roles", user.roles.toTypedArray())
+            .withArrayClaim("permissions", user.permissions.toTypedArray())
             .withExpiresAt(Date(System.currentTimeMillis() + 60000 * 60 * 24)) // 24 Hours
             .sign(algorithm)
     }
@@ -44,7 +48,17 @@ class TokenService(config: ApplicationConfig) {
             val decoded = verifier.verify(token)
             val userId = decoded.getClaim("userId").asInt()
             val username = decoded.getClaim("username").asString()
-            LoginUser(userId, username)
+            val roles = decoded.getClaim("roles").asList(String::class.java)?.toSet() ?: emptySet()
+            val permissions = decoded.getClaim("permissions").asList(String::class.java)?.toSet() ?: emptySet()
+            LoginUser(userId, username, roles = roles, permissions = permissions)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun extractTokenId(token: String): String? {
+        return try {
+            JWT.decode(token).id
         } catch (e: Exception) {
             null
         }

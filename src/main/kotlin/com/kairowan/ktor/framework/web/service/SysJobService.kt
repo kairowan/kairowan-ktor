@@ -1,32 +1,32 @@
 package com.kairowan.ktor.framework.web.service
 
-import com.kairowan.ktor.framework.manager.AsyncManager
+import com.kairowan.ktor.core.database.DatabaseProvider
+import com.kairowan.ktor.core.scheduling.TaskScheduler
 import com.kairowan.ktor.framework.web.domain.*
 import com.kairowan.ktor.framework.web.page.KPageRequest
 import com.kairowan.ktor.framework.web.page.KTableData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.ktorm.database.Database
 import org.ktorm.dsl.*
 import org.ktorm.entity.add
-import org.ktorm.entity.filter
 import org.ktorm.entity.find
 import org.ktorm.entity.sequenceOf
-import org.ktorm.entity.toList
 import org.ktorm.entity.update
 import org.quartz.*
 import org.quartz.impl.StdSchedulerFactory
 import org.quartz.impl.matchers.GroupMatcher
 import org.slf4j.LoggerFactory
-import java.time.LocalDateTime
 
 /**
- * 定时任务服务
+ * 定时任务服务 (框架层 - 保留兼容性)
  * @author Kairowan
  * @date 2026-01-18
  */
-class SysJobService(private val database: Database) {
-
+class SysJobService(
+    private val databaseProvider: DatabaseProvider,
+    private val taskScheduler: TaskScheduler
+) {
+    private val database get() = databaseProvider.database
     private val logger = LoggerFactory.getLogger(SysJobService::class.java)
     private val scheduler: Scheduler = StdSchedulerFactory.getDefaultScheduler()
 
@@ -38,13 +38,14 @@ class SysJobService(private val database: Database) {
      * 获取任务列表
      */
     suspend fun list(page: KPageRequest? = null): KTableData = withContext(Dispatchers.IO) {
+        val safePage = page?.normalized()
         val query = database.from(SysJobs)
             .select()
             .orderBy(SysJobs.jobId.asc())
 
-        if (page != null) {
-            val offset = page.getOffset()
-            query.limit(offset, page.pageSize)
+        if (safePage != null) {
+            val offset = safePage.getOffset()
+            query.limit(offset, safePage.pageSize)
             val total = database.from(SysJobs).select(count()).map { it.getInt(1) }.first().toLong()
             val list = query.map { SysJobs.createEntity(it) }
             KTableData.build(list, total)
@@ -90,10 +91,7 @@ class SysJobService(private val database: Database) {
         database.sequenceOf(SysJobs).update(job)
         
         // 重新调度
-        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
-        if (scheduler.checkExists(jobKey)) {
-            scheduler.deleteJob(jobKey)
-        }
+        taskScheduler.removeJob(job.jobName, job.jobGroup)
         
         if (job.status == "0") {
             addToScheduler(job)
@@ -108,10 +106,7 @@ class SysJobService(private val database: Database) {
         val job = database.sequenceOf(SysJobs).find { it.jobId eq jobId } ?: return@withContext false
         
         // 从调度器删除
-        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
-        if (scheduler.checkExists(jobKey)) {
-            scheduler.deleteJob(jobKey)
-        }
+        taskScheduler.removeJob(job.jobName, job.jobGroup)
         
         database.delete(SysJobs) { it.jobId eq jobId }
         true
@@ -123,10 +118,7 @@ class SysJobService(private val database: Database) {
     suspend fun pauseJob(jobId: Long): Boolean = withContext(Dispatchers.IO) {
         val job = database.sequenceOf(SysJobs).find { it.jobId eq jobId } ?: return@withContext false
         
-        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
-        if (scheduler.checkExists(jobKey)) {
-            scheduler.pauseJob(jobKey)
-        }
+        taskScheduler.pauseJob(job.jobName, job.jobGroup)
         
         database.update(SysJobs) {
             set(it.status, "1")
@@ -141,12 +133,10 @@ class SysJobService(private val database: Database) {
     suspend fun resumeJob(jobId: Long): Boolean = withContext(Dispatchers.IO) {
         val job = database.sequenceOf(SysJobs).find { it.jobId eq jobId } ?: return@withContext false
         
-        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
-        
-        if (!scheduler.checkExists(jobKey)) {
+        if (!taskScheduler.checkExists(job.jobName, job.jobGroup)) {
             addToScheduler(job)
         } else {
-            scheduler.resumeJob(jobKey)
+            taskScheduler.resumeJob(job.jobName, job.jobGroup)
         }
         
         database.update(SysJobs) {
@@ -162,15 +152,11 @@ class SysJobService(private val database: Database) {
     suspend fun runOnce(jobId: Long): Boolean = withContext(Dispatchers.IO) {
         val job = database.sequenceOf(SysJobs).find { it.jobId eq jobId } ?: return@withContext false
         
-        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
-        
-        if (scheduler.checkExists(jobKey)) {
-            scheduler.triggerJob(jobKey)
-        } else {
-            // 临时添加执行
+        if (!taskScheduler.checkExists(job.jobName, job.jobGroup)) {
             addToScheduler(job)
-            scheduler.triggerJob(jobKey)
         }
+        
+        taskScheduler.triggerJob(job.jobName, job.jobGroup)
         true
     }
 
@@ -205,18 +191,17 @@ class SysJobService(private val database: Database) {
      */
     private fun addToScheduler(job: SysJob) {
         try {
-            val jobDetail = JobBuilder.newJob(GenericJob::class.java)
-                .withIdentity(job.jobName, job.jobGroup)
-                .usingJobData("invokeTarget", job.invokeTarget)
-                .usingJobData("jobId", job.jobId)
-                .build()
-
-            val trigger = TriggerBuilder.newTrigger()
-                .withIdentity("${job.jobName}-Trigger", job.jobGroup)
-                .withSchedule(CronScheduleBuilder.cronSchedule(job.cronExpression))
-                .build()
-
-            scheduler.scheduleJob(jobDetail, trigger)
+            val jobData = mapOf(
+                "invokeTarget" to job.invokeTarget,
+                "jobId" to job.jobId
+            )
+            taskScheduler.addJob(
+                job.jobName,
+                job.jobGroup,
+                GenericJob::class.java,
+                job.cronExpression,
+                jobData
+            )
             logger.info("Added job to scheduler: ${job.jobName}")
         } catch (e: Exception) {
             logger.error("Failed to add job: ${job.jobName}", e)
@@ -237,7 +222,6 @@ data class JobStatusVo(
 
 /**
  * 通用任务执行器
- * 根据 invokeTarget 动态调用目标方法
  */
 class GenericJob : Job {
     private val logger = LoggerFactory.getLogger(GenericJob::class.java)
@@ -250,7 +234,6 @@ class GenericJob : Job {
         logger.info("Executing job: $invokeTarget (ID: $jobId)")
         
         try {
-            // 反射调用目标类的 execute 方法
             val clazz = Class.forName(invokeTarget)
             val instance = clazz.getDeclaredConstructor().newInstance()
             val method = clazz.getMethod("execute")

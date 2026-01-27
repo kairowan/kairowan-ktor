@@ -1,7 +1,7 @@
 package com.kairowan.ktor.framework.web.service
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.kairowan.ktor.common.utils.RedisUtils
+import com.kairowan.ktor.core.cache.CacheProvider
 import com.kairowan.ktor.framework.security.LoginUser
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter
  * @author Kairowan
  * @date 2026-01-18
  */
-class OnlineUserService {
+class OnlineUserService(private val cache: CacheProvider) {
 
     companion object {
         private const val ONLINE_PREFIX = "online_user:"
@@ -39,22 +39,22 @@ class OnlineUserService {
             os = os,
             loginTime = LocalDateTime.now().format(formatter)
         )
-        
+
         val json = mapper.writeValueAsString(onlineUser)
         // 默认 24 小时
-        RedisUtils.setex("$ONLINE_PREFIX$tokenId", 86400, json)
+        cache.set("$ONLINE_PREFIX$tokenId", json, 86400)
     }
 
     /**
      * 获取所有在线用户
      */
     fun getOnlineUsers(): List<OnlineUser> {
-        val keys = RedisUtils.keys("$ONLINE_PREFIX*")
+        val keys = cache.keys("$ONLINE_PREFIX*")
         if (keys.isEmpty()) return emptyList()
-        
+
         return keys.mapNotNull { key ->
             try {
-                val json = RedisUtils.get(key) ?: return@mapNotNull null
+                val json = cache.get(key) ?: return@mapNotNull null
                 mapper.readValue(json, OnlineUser::class.java)
             } catch (e: Exception) {
                 null
@@ -67,9 +67,9 @@ class OnlineUserService {
      */
     fun forceLogout(tokenId: String): Boolean {
         // 删除在线记录
-        RedisUtils.del("$ONLINE_PREFIX$tokenId")
+        cache.delete("$ONLINE_PREFIX$tokenId")
         // 加入 token 黑名单
-        RedisUtils.setex("${TOKEN_PREFIX}blacklist:$tokenId", 86400, "1")
+        cache.set("${TOKEN_PREFIX}blacklist:$tokenId", "1", 86400)
         return true
     }
 
@@ -77,21 +77,21 @@ class OnlineUserService {
      * 用户下线
      */
     fun setOffline(tokenId: String) {
-        RedisUtils.del("$ONLINE_PREFIX$tokenId")
+        cache.delete("$ONLINE_PREFIX$tokenId")
     }
 
     /**
      * 检查用户是否在线
      */
     fun isOnline(tokenId: String): Boolean {
-        return RedisUtils.exists("$ONLINE_PREFIX$tokenId")
+        return cache.exists("$ONLINE_PREFIX$tokenId")
     }
 
     /**
      * 获取在线用户数量
      */
     fun getOnlineCount(): Long {
-        return RedisUtils.keys("$ONLINE_PREFIX*").size.toLong()
+        return cache.keys("$ONLINE_PREFIX*").size.toLong()
     }
 }
 
