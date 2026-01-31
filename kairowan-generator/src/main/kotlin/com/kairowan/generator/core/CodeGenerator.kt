@@ -51,14 +51,12 @@ class CodeGenerator(
         
         val importLines = imports.sorted().joinToString("\n") { "import $it" }
         
-        // 生成属性
         val properties = columns.joinToString("\n    ") { col ->
             val propName = col.toPropertyName()
             val propType = col.toKotlinType()
             "var $propName: $propType"
         }
         
-        // 生成表映射
         val tableColumns = columns.joinToString("\n    ") { col ->
             val propName = col.toPropertyName()
             val ktormType = col.toKtormType()

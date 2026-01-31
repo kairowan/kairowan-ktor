@@ -29,7 +29,6 @@ class CacheMonitorController : KController(), AuthenticatedRouteController {
         val cacheProvider by inject<CacheProvider>()
 
         route(MonitorApiRoutes.Cache.ROOT) {
-            // 获取 L1 缓存统计
             requirePermission("monitor:cache:list") {
                 get(MonitorApiRoutes.Cache.STATS) {
                     if (cacheProvider is TwoLevelCacheProvider) {
@@ -43,7 +42,6 @@ class CacheMonitorController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取 L1 缓存大小
             requirePermission("monitor:cache:list") {
                 get(MonitorApiRoutes.Cache.SIZE) {
                     if (cacheProvider is TwoLevelCacheProvider) {
@@ -71,7 +69,6 @@ class CacheMonitorController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取缓存详细信息
             requirePermission("monitor:cache:list") {
                 get(MonitorApiRoutes.Cache.INFO) {
                     if (cacheProvider is TwoLevelCacheProvider) {

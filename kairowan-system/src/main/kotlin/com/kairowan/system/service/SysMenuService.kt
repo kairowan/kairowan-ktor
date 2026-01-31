@@ -36,7 +36,6 @@ class SysMenuService(
      * 根据用户ID查询菜单树 (优化版 - 单次查询 + 缓存)
      */
     suspend fun selectMenuTreeByUserId(userId: Int): List<RouterVo> {
-        // 1. 先从缓存获取
         val cacheKey = "${CacheConstants.USER_MENU_TREE_PREFIX}$userId"
         cache.get(cacheKey)?.let { cached ->
             logger.debug("Cache hit for user menu tree: userId=$userId")
@@ -49,7 +48,6 @@ class SysMenuService(
             } ?: emptyList()
         }
 
-        // 2. 缓存未命中，从数据库查询
         val menuTree = try {
             withContext(Dispatchers.IO) {
                 // 简化查询：先检查表是否存在数据
@@ -117,7 +115,6 @@ class SysMenuService(
             emptyList()
         }
 
-        // 3. 写入缓存 (30分钟过期)
         if (menuTree.isNotEmpty()) {
             try {
                 cache.set(cacheKey, mapper.writeValueAsString(menuTree), 1800)

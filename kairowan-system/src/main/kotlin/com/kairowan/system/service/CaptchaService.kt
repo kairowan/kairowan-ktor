@@ -37,7 +37,6 @@ class CaptchaService(private val cache: CacheProvider) {
         // 存入缓存
         cache.set("$CAPTCHA_PREFIX$uuid", code.lowercase(), CAPTCHA_EXPIRE_SECONDS)
         
-        // 生成图片
         val imageBase64 = generateImage(code)
         
         return CaptchaResult(

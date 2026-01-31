@@ -30,13 +30,11 @@ val RequestLogPlugin = createApplicationPlugin(name = "RequestLogPlugin") {
             val sb = StringBuilder()
             sb.append("Request [").append(method).append(" ").append(uri).append("]")
             
-            // 1. Query Params
             if (!call.request.queryParameters.isEmpty()) {
                 val params = call.request.queryParameters.entries().joinToString(", ") { "${it.key}=[${it.value.joinToString()}]" }
                 sb.append(" Params: {").append(params).append("}")
             }
 
-            // 2. Request Body (需要 DoubleReceive 插件先安装)
             try {
                 val contentType = call.request.contentType()
                 if (!contentType.match(ContentType.MultiPart.Any)) {

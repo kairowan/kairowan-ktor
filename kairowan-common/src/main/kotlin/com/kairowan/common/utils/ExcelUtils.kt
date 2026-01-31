@@ -22,13 +22,11 @@ object ExcelUtils {
         val workbook: Workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("Sheet1")
         
-        // 1. 解析注解
         val fields = clazz.declaredFields.filter { it.isAnnotationPresent(Excel::class.java) }
         if (fields.isEmpty()) {
             throw IllegalArgumentException("No @Excel annotations found in ${clazz.simpleName}")
         }
         
-        // 2. 创建表头
         val headerRow = sheet.createRow(0)
         fields.forEachIndexed { index, field ->
             val excelAnno = field.getAnnotation(Excel::class.java)
@@ -36,7 +34,6 @@ object ExcelUtils {
             cell.setCellValue(if (excelAnno.name.isNotEmpty()) excelAnno.name else field.name)
         }
 
-        // 3. 填充数据
         list.forEachIndexed { rowIndex, item ->
             val row = sheet.createRow(rowIndex + 1)
             fields.forEachIndexed { colIndex, field ->
@@ -47,7 +44,6 @@ object ExcelUtils {
             }
         }
         
-        // 4. 输出流
         val outputStream = ByteArrayOutputStream()
         workbook.write(outputStream)
         workbook.close()

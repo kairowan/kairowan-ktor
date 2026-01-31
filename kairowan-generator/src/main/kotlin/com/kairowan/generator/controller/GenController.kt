@@ -28,7 +28,6 @@ class GenController : KController(), AuthenticatedRouteController {
         val database by inject<Database>()
 
         route(GeneratorApiRoutes.Gen.ROOT) {
-            // 获取所有表
             requirePermission("tool:gen:list") {
                 get(GeneratorApiRoutes.Gen.TABLES) {
                     val reader = TableMetadataReader(database)
@@ -37,7 +36,6 @@ class GenController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取表结构
             requirePermission("tool:gen:query") {
                 get(GeneratorApiRoutes.Gen.TABLE_DETAIL) {
                     val tableName = call.parameters["tableName"]
@@ -77,7 +75,6 @@ class GenController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 生成代码并保存
             requirePermission("tool:gen:code") {
                 post(GeneratorApiRoutes.Gen.GENERATE) {
                     val tableName = call.parameters["tableName"]

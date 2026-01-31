@@ -27,14 +27,12 @@ class SysPermissionService(
      * 获取用户的菜单权限标识列表 (优化版 - 单次查询 + 缓存)
      */
     suspend fun getMenuPermissions(userId: Int): Set<String> {
-        // 1. 先从缓存获取
         val cacheKey = "${CacheConstants.USER_PERMISSIONS_PREFIX}$userId"
         cache.get(cacheKey)?.let { cached ->
             logger.debug("Cache hit for user permissions: userId=$userId")
             return cached.split(",").toSet()
         }
 
-        // 2. 缓存未命中，从数据库查询（优化为单次 JOIN 查询）
         val permissions = withContext(Dispatchers.IO) {
             val results = database.from(SysUserRoles)
                 .innerJoin(SysRoles, on = SysUserRoles.roleId eq SysRoles.roleId)
@@ -60,7 +58,6 @@ class SysPermissionService(
             }
         }
 
-        // 3. 写入缓存 (1小时过期)
         if (permissions.isNotEmpty()) {
             cache.set(cacheKey, permissions.joinToString(","), 3600)
             logger.debug("Cached user permissions: userId=$userId, count=${permissions.size}")
@@ -73,14 +70,12 @@ class SysPermissionService(
      * 获取用户的角色标识列表 (优化版 - 单次查询 + 缓存)
      */
     suspend fun getRoleKeys(userId: Int): Set<String> {
-        // 1. 先从缓存获取
         val cacheKey = "${CacheConstants.USER_ROLES_PREFIX}$userId"
         cache.get(cacheKey)?.let { cached ->
             logger.debug("Cache hit for user roles: userId=$userId")
             return cached.split(",").toSet()
         }
 
-        // 2. 缓存未命中，从数据库查询（优化为单次 JOIN 查询）
         val roles = withContext(Dispatchers.IO) {
             database.from(SysUserRoles)
                 .innerJoin(SysRoles, on = SysUserRoles.roleId eq SysRoles.roleId)
@@ -90,7 +85,6 @@ class SysPermissionService(
                 .toSet()
         }
 
-        // 3. 写入缓存 (1小时过期)
         if (roles.isNotEmpty()) {
             cache.set(cacheKey, roles.joinToString(","), 3600)
             logger.debug("Cached user roles: userId=$userId, count=${roles.size}")

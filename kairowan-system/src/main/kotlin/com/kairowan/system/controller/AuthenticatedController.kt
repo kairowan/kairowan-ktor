@@ -49,7 +49,6 @@ class AuthenticatedController : KController(), AuthenticatedRouteController {
                 call.respond(KResult.ok<Any>(msg = "登出成功"))
             }
 
-            // 获取用户信息
             get(SystemApiRoutes.Auth.GET_INFO, {
                 tags = listOf("Auth")
                 summary = "获取用户信息"
@@ -85,7 +84,6 @@ class AuthenticatedController : KController(), AuthenticatedRouteController {
                 )))
             }
 
-            // 获取路由菜单
             get(SystemApiRoutes.Auth.GET_ROUTERS, {
                 tags = listOf("Auth")
                 summary = "获取路由菜单"

@@ -26,7 +26,6 @@ class DashboardController : KController(), AuthenticatedRouteController {
         val dashboardService by inject<DashboardService>()
 
         route(MonitorApiRoutes.Dashboard.ROOT) {
-            // 获取统计数据
             requirePermission("monitor:dashboard:view") {
                 get(MonitorApiRoutes.Dashboard.STATS) {
                     val stats = dashboardService.getStats()
@@ -34,7 +33,6 @@ class DashboardController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取系统信息
             requirePermission("monitor:dashboard:view") {
                 get(MonitorApiRoutes.Dashboard.SYSTEM_INFO) {
                     val systemInfo = dashboardService.getSystemInfo()

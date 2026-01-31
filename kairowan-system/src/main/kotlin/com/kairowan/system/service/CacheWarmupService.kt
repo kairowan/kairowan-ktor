@@ -68,7 +68,6 @@ class CacheWarmupService(
      * 预热数据字典缓存
      */
     private suspend fun warmupDictData() = withContext(Dispatchers.IO) {
-        // 获取所有启用的字典类型
         val dictTypes = database.sequenceOf(SysDictDatas)
             .filter { it.status eq "0" }
             .toList()

@@ -37,11 +37,9 @@ object FileUploadUtils {
      * @return 保存后的文件路径
      */
     fun saveFile(inputStream: InputStream, originalFileName: String, uploadPath: String = DEFAULT_UPLOAD_PATH): String {
-        // 生成唯一文件名
         val extension = getFileExtension(originalFileName)
         val fileName = generateFileName(extension)
 
-        // 创建日期目录
         val dateDir = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
         val targetDir = Paths.get(uploadPath, dateDir)
 
