@@ -15,6 +15,7 @@ import org.ktorm.entity.find
 import org.ktorm.entity.sequenceOf
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import org.slf4j.LoggerFactory
 
 /**
  * 文件管理服务
@@ -22,6 +23,7 @@ import java.time.format.DateTimeFormatter
  * @date 2026-01-29
  */
 class FileService(private val database: Database) {
+    private val logger = LoggerFactory.getLogger(FileService::class.java)
 
     /**
      * 获取文件列表
@@ -33,7 +35,7 @@ class FileService(private val database: Database) {
     ): KTableData = withContext(Dispatchers.IO) {
         val safePage = page?.normalized()
 
-        println("🔍 FileService.getFileList - type: $type, keyword: '$keyword', page: $safePage")
+        logger.debug("FileService.getFileList - type: {}, keyword: {}, page: {}", type, keyword, safePage)
 
         var query = database.from(SysFiles)
             .select()
@@ -41,13 +43,13 @@ class FileService(private val database: Database) {
         // 类型过滤
         if (type != null && type != "all") {
             query = query.where { SysFiles.fileType eq type }
-            println("🔍 Added type filter: $type")
+            logger.debug("Added type filter: {}", type)
         }
 
         // 关键词搜索
         if (!keyword.isNullOrBlank()) {
             query = query.where { SysFiles.fileName like "%$keyword%" }
-            println("🔍 Added keyword filter: $keyword")
+            logger.debug("Added keyword filter: {}", keyword)
         }
 
         query = query.orderBy(SysFiles.createTime.desc())
@@ -68,7 +70,7 @@ class FileService(private val database: Database) {
             }
 
             val total = countQuery.map { it.getInt(1) }.first().toLong()
-            println("🔍 Total count: $total")
+            logger.debug("Total count: {}", total)
 
             val list = query.map { row ->
                 val sizeBytes = row[SysFiles.fileSize] ?: 0L
@@ -154,7 +156,7 @@ class FileService(private val database: Database) {
         uploaderId: Int,
         uploaderName: String
     ): Long = withContext(Dispatchers.IO) {
-        println("📤 Uploading file: $fileName, type: $fileType, size: $fileSize")
+        logger.info("Uploading file: name={}, type={}, size={}", fileName, fileType, fileSize)
         val file = SysFile {
             this.fileName = fileName
             this.fileType = fileType
@@ -166,7 +168,7 @@ class FileService(private val database: Database) {
             this.createTime = LocalDateTime.now()
         }
         database.sequenceOf(SysFiles).add(file)
-        println("✅ File uploaded with ID: ${file.fileId}")
+        logger.info("File uploaded with ID: {}", file.fileId)
         file.fileId
     }
 

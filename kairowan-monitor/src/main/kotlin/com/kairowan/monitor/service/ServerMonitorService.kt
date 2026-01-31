@@ -1,30 +1,55 @@
-package com.kairowan.ktor.framework.web.service
+package com.kairowan.monitor.service
 
+import com.kairowan.core.framework.cache.CacheProvider
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.management.ManagementFactory
 import java.net.InetAddress
 import java.text.DecimalFormat
 
 /**
- * 服务器监控服务
+ * 服务器监控服务 (性能优化版)
+ * Server Monitor Service with Cache
+ *
  * @author Kairowan
  * @date 2026-01-18
  */
-class ServerMonitorService {
-
+class ServerMonitorService(
+    private val cache: CacheProvider
+) {
+    private val logger = LoggerFactory.getLogger(ServerMonitorService::class.java)
+    private val mapper = jacksonObjectMapper()
     private val df = DecimalFormat("#.##")
 
     /**
-     * 获取服务器完整信息
+     * 获取服务器完整信息（带缓存）
+     * 缓存1分钟，避免频繁收集系统信息
      */
     fun getServerInfo(): ServerInfo {
-        return ServerInfo(
+        val cacheKey = "server:info"
+
+        // 从缓存获取（1分钟）
+        cache.get(cacheKey)?.let { cached ->
+            logger.debug("Cache hit for server info")
+            return mapper.readValue(cached, ServerInfo::class.java)
+        }
+
+        // 收集服务器信息
+        val serverInfo = ServerInfo(
             cpu = getCpuInfo(),
             memory = getMemoryInfo(),
             jvm = getJvmInfo(),
             system = getSystemInfo(),
             disk = getDiskInfo()
         )
+
+        // 缓存1分钟
+        cache.set(cacheKey, mapper.writeValueAsString(serverInfo), 60)
+        logger.debug("Cached server info")
+
+        return serverInfo
     }
 
     /**

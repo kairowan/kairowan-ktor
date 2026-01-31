@@ -1,4 +1,4 @@
-package com.kairowan.ktor.generator
+package com.kairowan.generator.core
 
 import org.ktorm.database.Database
 import java.sql.ResultSet

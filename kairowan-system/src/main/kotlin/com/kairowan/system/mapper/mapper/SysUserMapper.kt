@@ -1,6 +1,6 @@
-package com.kairowan.ktor.framework.web.mapper
+package com.kairowan.system.mapper
 
-import com.kairowan.ktor.framework.web.domain.SysUser
+import com.kairowan.system.domain.SysUser
 import org.ktorm.database.Database
 import java.sql.ResultSet
 

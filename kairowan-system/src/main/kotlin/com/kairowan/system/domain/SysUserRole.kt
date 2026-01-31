@@ -1,4 +1,4 @@
-package com.kairowan.ktor.framework.web.domain
+package com.kairowan.system.domain
 
 import org.ktorm.schema.Table
 import org.ktorm.schema.int

@@ -1,7 +1,8 @@
-package com.kairowan.ktor.framework.web.service
+package com.kairowan.core.service
 
-import com.kairowan.ktor.framework.web.page.KPageRequest
-import com.kairowan.ktor.framework.web.page.KTableData
+import com.kairowan.core.page.KPageRequest
+import com.kairowan.core.page.KTableData
+import com.kairowan.core.extensions.toMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ktorm.database.Database
@@ -25,8 +26,8 @@ import org.ktorm.schema.LongSqlType
  * @date 2026-01-17
  */
 abstract class KService<E : Entity<E>>(
-    private val database: Database,
-    private val table: Table<E>
+    protected val database: Database,
+    protected val table: Table<E>
 ) {
 
     /**
@@ -59,6 +60,24 @@ abstract class KService<E : Entity<E>>(
         database.sequenceOf(table).update(entity)
     }
 
+    suspend fun deleteById(id: Int): Int = dbQuery {
+        val primaryKey = table.primaryKeys.singleOrNull() ?: return@dbQuery 0
+        when (primaryKey.sqlType) {
+            is IntSqlType -> database.delete(table) { (primaryKey as Column<Int>) eq id }
+            is LongSqlType -> database.delete(table) { (primaryKey as Column<Long>) eq id.toLong() }
+            else -> 0
+        }
+    }
+
+    suspend fun deleteById(id: Long): Int = dbQuery {
+        val primaryKey = table.primaryKeys.singleOrNull() ?: return@dbQuery 0
+        when (primaryKey.sqlType) {
+            is IntSqlType -> database.delete(table) { (primaryKey as Column<Int>) eq id.toInt() }
+            is LongSqlType -> database.delete(table) { (primaryKey as Column<Long>) eq id }
+            else -> 0
+        }
+    }
+
     suspend fun list(page: KPageRequest? = null): KTableData = dbQuery {
         val query = database.from(table).select()
 
@@ -68,14 +87,14 @@ abstract class KService<E : Entity<E>>(
         if (safePage != null) {
             val offset = safePage.getOffset()
             query.limit(offset, safePage.pageSize)
-            
+
             // Simplified total count for demo
             val total = database.from(table).select(count()).map { it.getInt(1) }.first().toLong()
-            val list = query.map { table.createEntity(it) }
-            
+            val list = query.map { table.createEntity(it) }.map { it.toMap() }
+
             KTableData.build(list, total)
         } else {
-            val list = query.map { table.createEntity(it) }
+            val list = query.map { table.createEntity(it) }.map { it.toMap() }
             KTableData.build(list)
         }
     }

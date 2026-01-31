@@ -1,20 +1,10 @@
-package com.kairowan.ktor.common.utils
+package com.kairowan.common.utils
 
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.ByteArrayOutputStream
 import java.lang.reflect.Field
 import java.util.Date
-
-/**
- * Excel 导出注解
- */
-@Target(AnnotationTarget.FIELD)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class Excel(
-    val name: String = "",
-    val dateFormat: String = "yyyy-MM-dd HH:mm:ss"
-)
 
 /**
  * Excel 工具类

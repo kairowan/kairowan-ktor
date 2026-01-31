@@ -1,4 +1,4 @@
-package com.kairowan.ktor.generator
+package com.kairowan.generator.core
 
 import java.io.File
 
@@ -10,7 +10,7 @@ import java.io.File
  * @date 2026-01-18
  */
 class CodeGenerator(
-    private val basePackage: String = "com.kairowan.ktor",
+    private val basePackage: String = "com.kairowan",
     private val outputDir: String = "src/main/kotlin"
 ) {
 
@@ -133,7 +133,7 @@ class ${className}Service(database: Database) : KService<$className>(database, $
         return """
 package $controllerPackage
 
-import com.kairowan.ktor.common.KResult
+import com.kairowan.common.KResult
 import $domainPackage.$className
 import $servicePackage.${className}Service
 import io.ktor.server.application.*

@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: kairowan-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-password}
+      MYSQL_DATABASE: kairowan_ktor
+      TZ: Asia/Shanghai
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./kairowan-app/src/main/resources/sql/init_complete.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: kairowan-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-password} --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kairowan-Ktor 应用
+  kairowan-ktor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kairowan-ktor
+    restart: unless-stopped
+    environment:
+      # 数据库配置
+      DB_URL: "jdbc:mysql://mysql:3306/kairowan_ktor?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&rewriteBatchedStatements=true&cacheResultSetMetadata=true&cacheServerConfiguration=true&elideSetAutoCommits=true&maintainTimeStats=false"
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      
+      # Redis 配置
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-password}
+      
+      # JWT 配置
+      JWT_SECRET: ${JWT_SECRET:-please-change-this-to-a-very-long-and-secure-secret-key-at-least-32-characters-long}
+      
+      # 应用配置
+      PORT: 8080
+      FILE_UPLOAD_PATH: /app/uploads
+      FILE_URL_PREFIX: http://localhost:8080/files
+      
+      # 性能配置
+      DB_MAX_POOL_SIZE: 20
+      DB_MIN_IDLE: 5
+      FLYWAY_ENABLED: true
+      FLYWAY_RUN_ONCE: true
+      
+      # 时区
+      TZ: Asia/Shanghai
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - uploads-data:/app/uploads
+      - logs-data:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+  uploads-data:
+    driver: local
+  logs-data:
+    driver: local
+
+networks:
+  default:
+    name: kairowan-network

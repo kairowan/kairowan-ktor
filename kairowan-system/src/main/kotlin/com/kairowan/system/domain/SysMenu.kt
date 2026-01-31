@@ -1,4 +1,4 @@
-package com.kairowan.ktor.framework.web.domain
+package com.kairowan.system.domain
 
 import org.ktorm.schema.Table
 import org.ktorm.schema.int
@@ -14,7 +14,7 @@ import java.time.LocalDateTime
  */
 interface SysMenu : Entity<SysMenu> {
     companion object : Entity.Factory<SysMenu>()
-    
+
     var menuId: Int
     var menuName: String
     var parentId: Int        // 父菜单ID
@@ -26,6 +26,9 @@ interface SysMenu : Entity<SysMenu> {
     var icon: String
     var status: String       // 0正常 1停用
     var createTime: LocalDateTime?
+
+    // 子菜单列表（用于树形结构，不映射到数据库）
+    var children: List<SysMenu>?
 }
 
 object SysMenus : Table<SysMenu>("sys_menu") {

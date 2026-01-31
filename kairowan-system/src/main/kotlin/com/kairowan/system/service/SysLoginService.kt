@@ -1,15 +1,14 @@
-package com.kairowan.ktor.framework.web.service
+package com.kairowan.system.service
 
-import com.kairowan.ktor.common.constant.ResultCode
-import com.kairowan.ktor.common.exception.ServiceException
-import com.kairowan.ktor.common.utils.SecurityUtils
-import com.kairowan.ktor.core.cache.CacheProvider
-import com.kairowan.ktor.core.database.DatabaseProvider
-import com.kairowan.ktor.framework.security.LoginUser
-import com.kairowan.ktor.framework.web.domain.SysUsers
-import com.kairowan.ktor.framework.web.dto.LoginBody
+import com.kairowan.common.constant.ResultCode
+import com.kairowan.common.exception.ServiceException
+import com.kairowan.common.utils.SecurityUtils
+import com.kairowan.core.framework.cache.CacheProvider
+import com.kairowan.core.framework.security.LoginUser
+import com.kairowan.system.domain.SysUsers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ktorm.database.Database
 import org.ktorm.dsl.eq
 import org.ktorm.entity.find
 import org.ktorm.entity.sequenceOf
@@ -20,12 +19,11 @@ import org.ktorm.entity.sequenceOf
  * @date 2026-01-18
  */
 class SysLoginService(
-    private val databaseProvider: DatabaseProvider,
+    private val database: Database,
     private val tokenService: TokenService,
     private val permissionService: SysPermissionService,
     private val cache: CacheProvider
 ) {
-    private val database get() = databaseProvider.database
 
     companion object {
         private const val TOKEN_BLACKLIST_PREFIX = "token:blacklist:"
@@ -35,8 +33,8 @@ class SysLoginService(
     /**
      * 用户登录
      */
-    suspend fun login(loginBody: LoginBody): String = withContext(Dispatchers.IO) {
-        val user = database.sequenceOf(SysUsers).find { it.userName eq loginBody.username }
+    suspend fun login(username: String, password: String): String = withContext(Dispatchers.IO) {
+        val user = database.sequenceOf(SysUsers).find { it.userName eq username }
             ?: throw ServiceException(ResultCode.USER_NOT_EXISTS)
         
         // 校验状态
@@ -45,7 +43,7 @@ class SysLoginService(
         }
         
         // 校验密码
-        if (!SecurityUtils.matchesPassword(loginBody.password, user.password)) {
+        if (!SecurityUtils.matchesPassword(password, user.password)) {
             throw ServiceException(ResultCode.USER_PASSWORD_NOT_MATCH)
         }
         

@@ -1,6 +1,6 @@
-package com.kairowan.ktor.common
+package com.kairowan.common
 
-import com.kairowan.ktor.common.constant.ResultCode
+import com.kairowan.common.constant.ResultCode
 import java.io.Serializable
 
 /**

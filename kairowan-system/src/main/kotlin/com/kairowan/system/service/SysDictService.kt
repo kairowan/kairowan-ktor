@@ -1,11 +1,11 @@
-package com.kairowan.ktor.framework.web.service
+package com.kairowan.system.service
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.kairowan.ktor.core.cache.CacheProvider
-import com.kairowan.ktor.core.database.DatabaseProvider
-import com.kairowan.ktor.framework.web.domain.*
+import com.kairowan.core.framework.cache.CacheProvider
+import com.kairowan.system.domain.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ktorm.database.Database
 import org.ktorm.dsl.eq
 import org.ktorm.entity.filter
 import org.ktorm.entity.sequenceOf
@@ -17,10 +17,9 @@ import org.ktorm.entity.toList
  * @date 2026-01-18
  */
 class SysDictService(
-    private val databaseProvider: DatabaseProvider,
+    private val database: Database,
     private val cache: CacheProvider
 ) {
-    private val database get() = databaseProvider.database
 
     companion object {
         private const val CACHE_PREFIX = "sys_dict:"
@@ -100,6 +99,17 @@ class SysDictService(
      */
     fun refreshCache(dictType: String) {
         cache.delete("$CACHE_PREFIX$dictType")
+    }
+
+    /**
+     * 刷新所有字典缓存
+     */
+    suspend fun refreshAllCache(): Int = withContext(Dispatchers.IO) {
+        val types = database.sequenceOf(SysDictTypes)
+            .filter { it.status eq "0" }
+            .toList()
+        cache.deleteByPattern("$CACHE_PREFIX*")
+        types.size
     }
 }
 

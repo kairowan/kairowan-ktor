@@ -1,4 +1,4 @@
-package com.kairowan.ktor.framework.web.page
+package com.kairowan.core.page
 
 import java.io.Serializable
 

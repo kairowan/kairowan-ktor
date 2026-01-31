@@ -1,6 +1,6 @@
-package com.kairowan.ktor.common.exception
+package com.kairowan.common.exception
 
-import com.kairowan.ktor.common.constant.ResultCode
+import com.kairowan.common.constant.ResultCode
 
 /**
  * 业务异常

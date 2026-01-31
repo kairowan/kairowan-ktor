@@ -1,4 +1,4 @@
-package com.kairowan.ktor.common.utils
+package com.kairowan.common.utils
 
 import java.time.LocalDateTime
 import java.time.ZoneId

@@ -1,0 +1,86 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Application configuration with sensitive data
+kairowan-app/src/main/resources/application.conf
+kairowan-app/src/main/resources/application-local.conf
+
+# Docker environment variables
+.env
+
+# Uploads directory (but keep .gitkeep)
+uploads/*
+!uploads/.gitkeep
+
+# Test reports
+test-results/
+test-output/
+
+# Build outputs
+*.jar
+*.war
+*.ear
+*.class
+
+# Package Files
+*.tar.gz
+*.zip
+
+# Virtual machine crash logs
+hs_err_pid*
+replay_pid*

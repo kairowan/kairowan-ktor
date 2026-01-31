@@ -15,11 +15,3 @@ CREATE TABLE IF NOT EXISTS sys_file (
     INDEX idx_uploader_id (uploader_id),
     INDEX idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文件表';
-
--- 插入示例数据
-INSERT INTO sys_file (file_name, file_type, file_size, file_url, thumbnail_url, uploader_id, uploader_name) VALUES
-('项目文档.pdf', 'document', 2621440, 'https://example.com/files/doc1.pdf', 'https://example.com/thumbnails/doc1.jpg', 1, '管理员'),
-('系统架构图.png', 'image', 524288, 'https://example.com/files/img1.png', 'https://example.com/thumbnails/img1.jpg', 1, '管理员'),
-('需求说明.docx', 'document', 1048576, 'https://example.com/files/doc2.docx', 'https://example.com/thumbnails/doc2.jpg', 1, '管理员'),
-('演示视频.mp4', 'video', 10485760, 'https://example.com/files/video1.mp4', 'https://example.com/thumbnails/video1.jpg', 1, '管理员'),
-('用户手册.pdf', 'document', 3145728, 'https://example.com/files/doc3.pdf', 'https://example.com/thumbnails/doc3.jpg', 1, '管理员');

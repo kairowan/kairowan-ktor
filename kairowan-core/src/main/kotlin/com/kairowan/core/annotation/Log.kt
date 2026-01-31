@@ -1,4 +1,4 @@
-package com.kairowan.ktor.framework.web.annotation
+package com.kairowan.core.framework.web.annotation
 
 /**
  * 操作日志注解

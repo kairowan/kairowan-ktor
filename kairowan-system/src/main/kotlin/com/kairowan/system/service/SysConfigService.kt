@@ -1,14 +1,16 @@
-package com.kairowan.ktor.framework.web.service
+package com.kairowan.system.service
 
-import com.kairowan.ktor.core.cache.CacheProvider
-import com.kairowan.ktor.core.database.DatabaseProvider
-import com.kairowan.ktor.framework.web.domain.SysConfig
-import com.kairowan.ktor.framework.web.domain.SysConfigs
+import com.kairowan.core.framework.cache.CacheProvider
+import com.kairowan.core.service.KService
+import com.kairowan.system.domain.SysConfig
+import com.kairowan.system.domain.SysConfigs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ktorm.database.Database
 import org.ktorm.dsl.eq
 import org.ktorm.entity.find
 import org.ktorm.entity.sequenceOf
+import org.ktorm.entity.toList
 
 /**
  * 系统配置服务
@@ -16,11 +18,9 @@ import org.ktorm.entity.sequenceOf
  * @date 2026-01-18
  */
 class SysConfigService(
-    private val databaseProvider: DatabaseProvider,
+    database: Database,
     private val cache: CacheProvider
-) : KService<SysConfig>(databaseProvider.database, SysConfigs) {
-
-    private val database get() = databaseProvider.database
+) : KService<SysConfig>(database, SysConfigs) {
 
     companion object {
         private const val CACHE_PREFIX = "sys_config:"
@@ -61,6 +61,17 @@ class SysConfigService(
      */
     fun refreshCache(configKey: String, configValue: String) {
         cache.set("$CACHE_PREFIX$configKey", configValue)
+    }
+
+    /**
+     * 刷新所有配置缓存
+     */
+    suspend fun refreshAllCache(): Int = withContext(Dispatchers.IO) {
+        val configs = database.sequenceOf(SysConfigs).toList()
+        configs.forEach { cfg ->
+            cache.set("$CACHE_PREFIX${cfg.configKey}", cfg.configValue)
+        }
+        configs.size
     }
 
     /**

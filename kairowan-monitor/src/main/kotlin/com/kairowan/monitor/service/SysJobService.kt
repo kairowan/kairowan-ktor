@@ -1,12 +1,12 @@
-package com.kairowan.ktor.framework.web.service
+package com.kairowan.monitor.service
 
-import com.kairowan.ktor.core.database.DatabaseProvider
-import com.kairowan.ktor.core.scheduling.TaskScheduler
-import com.kairowan.ktor.framework.web.domain.*
-import com.kairowan.ktor.framework.web.page.KPageRequest
-import com.kairowan.ktor.framework.web.page.KTableData
+import com.kairowan.monitor.domain.*
+import com.kairowan.core.page.KPageRequest
+import com.kairowan.core.page.KTableData
+import com.kairowan.core.extensions.toMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ktorm.database.Database
 import org.ktorm.dsl.*
 import org.ktorm.entity.add
 import org.ktorm.entity.find
@@ -18,20 +18,22 @@ import org.quartz.impl.matchers.GroupMatcher
 import org.slf4j.LoggerFactory
 
 /**
- * 定时任务服务 (框架层 - 保留兼容性)
+ * 定时任务服务
  * @author Kairowan
- * @date 2026-01-18
+ * @date 2026-01-28
  */
 class SysJobService(
-    private val databaseProvider: DatabaseProvider,
-    private val taskScheduler: TaskScheduler
+    private val database: Database
 ) {
-    private val database get() = databaseProvider.database
     private val logger = LoggerFactory.getLogger(SysJobService::class.java)
     private val scheduler: Scheduler = StdSchedulerFactory.getDefaultScheduler()
 
     companion object {
         const val JOB_GROUP = "DEFAULT"
+    }
+
+    init {
+        scheduler.start()
     }
 
     /**
@@ -46,11 +48,11 @@ class SysJobService(
         if (safePage != null) {
             val offset = safePage.getOffset()
             query.limit(offset, safePage.pageSize)
-            val total = database.from(SysJobs).select(count()).map { it.getInt(1) }.first().toLong()
-            val list = query.map { SysJobs.createEntity(it) }
+            val total = database.from(SysJobs).select(count()).map { row -> row.getInt(1) }.first().toLong()
+            val list = query.map { row -> SysJobs.createEntity(row) }.map { it.toMap() }
             KTableData.build(list, total)
         } else {
-            val list = query.map { SysJobs.createEntity(it) }
+            val list = query.map { row -> SysJobs.createEntity(row) }.map { it.toMap() }
             KTableData.build(list)
         }
     }
@@ -58,8 +60,8 @@ class SysJobService(
     /**
      * 获取任务详情
      */
-    suspend fun getById(jobId: Long): SysJob? = withContext(Dispatchers.IO) {
-        database.sequenceOf(SysJobs).find { it.jobId eq jobId }
+    suspend fun getById(jobId: Long): Map<String, Any?>? = withContext(Dispatchers.IO) {
+        database.sequenceOf(SysJobs).find { it.jobId eq jobId }?.toMap()
     }
 
     /**
@@ -70,9 +72,9 @@ class SysJobService(
         if (!CronExpression.isValidExpression(job.cronExpression)) {
             throw IllegalArgumentException("无效的CRON表达式: ${job.cronExpression}")
         }
-        
+
         database.sequenceOf(SysJobs).add(job)
-        
+
         // 如果状态正常，添加到调度器
         if (job.status == "0") {
             addToScheduler(job)
@@ -87,12 +89,15 @@ class SysJobService(
         if (!CronExpression.isValidExpression(job.cronExpression)) {
             throw IllegalArgumentException("无效的CRON表达式: ${job.cronExpression}")
         }
-        
+
         database.sequenceOf(SysJobs).update(job)
-        
+
         // 重新调度
-        taskScheduler.removeJob(job.jobName, job.jobGroup)
-        
+        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
+        if (scheduler.checkExists(jobKey)) {
+            scheduler.deleteJob(jobKey)
+        }
+
         if (job.status == "0") {
             addToScheduler(job)
         }
@@ -104,10 +109,13 @@ class SysJobService(
      */
     suspend fun deleteJob(jobId: Long): Boolean = withContext(Dispatchers.IO) {
         val job = database.sequenceOf(SysJobs).find { it.jobId eq jobId } ?: return@withContext false
-        
+
         // 从调度器删除
-        taskScheduler.removeJob(job.jobName, job.jobGroup)
-        
+        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
+        if (scheduler.checkExists(jobKey)) {
+            scheduler.deleteJob(jobKey)
+        }
+
         database.delete(SysJobs) { it.jobId eq jobId }
         true
     }
@@ -117,9 +125,12 @@ class SysJobService(
      */
     suspend fun pauseJob(jobId: Long): Boolean = withContext(Dispatchers.IO) {
         val job = database.sequenceOf(SysJobs).find { it.jobId eq jobId } ?: return@withContext false
-        
-        taskScheduler.pauseJob(job.jobName, job.jobGroup)
-        
+
+        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
+        if (scheduler.checkExists(jobKey)) {
+            scheduler.pauseJob(jobKey)
+        }
+
         database.update(SysJobs) {
             set(it.status, "1")
             where { it.jobId eq jobId }
@@ -132,13 +143,14 @@ class SysJobService(
      */
     suspend fun resumeJob(jobId: Long): Boolean = withContext(Dispatchers.IO) {
         val job = database.sequenceOf(SysJobs).find { it.jobId eq jobId } ?: return@withContext false
-        
-        if (!taskScheduler.checkExists(job.jobName, job.jobGroup)) {
+
+        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
+        if (!scheduler.checkExists(jobKey)) {
             addToScheduler(job)
         } else {
-            taskScheduler.resumeJob(job.jobName, job.jobGroup)
+            scheduler.resumeJob(jobKey)
         }
-        
+
         database.update(SysJobs) {
             set(it.status, "0")
             where { it.jobId eq jobId }
@@ -151,12 +163,13 @@ class SysJobService(
      */
     suspend fun runOnce(jobId: Long): Boolean = withContext(Dispatchers.IO) {
         val job = database.sequenceOf(SysJobs).find { it.jobId eq jobId } ?: return@withContext false
-        
-        if (!taskScheduler.checkExists(job.jobName, job.jobGroup)) {
+
+        val jobKey = JobKey.jobKey(job.jobName, job.jobGroup)
+        if (!scheduler.checkExists(jobKey)) {
             addToScheduler(job)
         }
-        
-        taskScheduler.triggerJob(job.jobName, job.jobGroup)
+
+        scheduler.triggerJob(jobKey)
         true
     }
 
@@ -165,14 +178,14 @@ class SysJobService(
      */
     fun getRunningJobs(): List<JobStatusVo> {
         val result = mutableListOf<JobStatusVo>()
-        
+
         val groupNames = scheduler.jobGroupNames
         for (groupName in groupNames) {
             val jobKeys = scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName))
             for (jobKey in jobKeys) {
                 val triggers = scheduler.getTriggersOfJob(jobKey)
                 val trigger = triggers.firstOrNull()
-                
+
                 result.add(JobStatusVo(
                     jobName = jobKey.name,
                     jobGroup = jobKey.group,
@@ -182,7 +195,7 @@ class SysJobService(
                 ))
             }
         }
-        
+
         return result
     }
 
@@ -191,17 +204,18 @@ class SysJobService(
      */
     private fun addToScheduler(job: SysJob) {
         try {
-            val jobData = mapOf(
-                "invokeTarget" to job.invokeTarget,
-                "jobId" to job.jobId
-            )
-            taskScheduler.addJob(
-                job.jobName,
-                job.jobGroup,
-                GenericJob::class.java,
-                job.cronExpression,
-                jobData
-            )
+            val jobDetail = JobBuilder.newJob(GenericJob::class.java)
+                .withIdentity(job.jobName, job.jobGroup)
+                .usingJobData("invokeTarget", job.invokeTarget)
+                .usingJobData("jobId", job.jobId)
+                .build()
+
+            val trigger = TriggerBuilder.newTrigger()
+                .withIdentity("${job.jobName}_trigger", job.jobGroup)
+                .withSchedule(CronScheduleBuilder.cronSchedule(job.cronExpression))
+                .build()
+
+            scheduler.scheduleJob(jobDetail, trigger)
             logger.info("Added job to scheduler: ${job.jobName}")
         } catch (e: Exception) {
             logger.error("Failed to add job: ${job.jobName}", e)
@@ -225,20 +239,20 @@ data class JobStatusVo(
  */
 class GenericJob : Job {
     private val logger = LoggerFactory.getLogger(GenericJob::class.java)
-    
+
     override fun execute(context: JobExecutionContext) {
         val dataMap = context.jobDetail.jobDataMap
         val invokeTarget = dataMap.getString("invokeTarget")
         val jobId = dataMap.getLong("jobId")
-        
+
         logger.info("Executing job: $invokeTarget (ID: $jobId)")
-        
+
         try {
             val clazz = Class.forName(invokeTarget)
             val instance = clazz.getDeclaredConstructor().newInstance()
             val method = clazz.getMethod("execute")
             method.invoke(instance)
-            
+
             logger.info("Job completed successfully: $invokeTarget")
         } catch (e: Exception) {
             logger.error("Job execution failed: $invokeTarget", e)

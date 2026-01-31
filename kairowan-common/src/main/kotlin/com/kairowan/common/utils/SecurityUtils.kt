@@ -1,4 +1,4 @@
-package com.kairowan.ktor.common.utils
+package com.kairowan.common.utils
 
 import org.mindrot.jbcrypt.BCrypt
 import java.util.Base64

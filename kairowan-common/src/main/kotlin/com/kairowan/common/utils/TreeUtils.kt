@@ -1,4 +1,4 @@
-package com.kairowan.ktor.common.utils
+package com.kairowan.common.utils
 
 /**
  * 树形结构工具类

@@ -6,13 +6,13 @@ import com.kairowan.common.KResult
 import com.kairowan.common.constant.ResultCode
 import com.kairowan.common.exception.ServiceException
 import com.kairowan.core.framework.security.LoginUser
-import com.kairowan.core.dto.LoginBody
+import com.kairowan.core.req.LoginReq
 import com.kairowan.system.controller.systemRoutes
 import com.kairowan.system.controller.authenticatedSystemRoutes
-import com.kairowan.generator.controller.generatorRoutes
-import com.kairowan.monitor.controller.monitorRoutes
-import com.kairowan.monitor.controller.dashboardRoutes
 import com.kairowan.core.framework.cache.CacheProvider
+import com.kairowan.core.framework.web.plugin.RequestLogPlugin
+import com.kairowan.app.api.AppApiRoutes
+import com.kairowan.system.service.FileSyncService
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -42,6 +42,8 @@ import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
 import org.ktorm.database.Database
 import org.slf4j.LoggerFactory
+import kotlinx.coroutines.runBlocking
+import java.io.File
 import java.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -60,7 +62,6 @@ private val PrometheusRegistryKey = AttributeKey<PrometheusMeterRegistry>("Prome
 fun Application.module() {
     val logger = LoggerFactory.getLogger("Application")
 
-    // ===== 1. 依赖注入 =====
     if (pluginOrNull(Koin) == null) {
         install(Koin) {
             modules(allModules(environment.config))
@@ -69,22 +70,24 @@ fun Application.module() {
 
     validateConfiguration(logger)
 
-    // ===== 2. 预热数据库连接 =====
-    warmupDatabase(logger)
+    val warmupEnabled = environment.config.propertyOrNull("db.warmup.enabled")
+        ?.getString()?.toBoolean() ?: true
+    if (warmupEnabled) {
+        warmupDatabase(logger)
+    } else {
+        logger.info("Database warmup skipped (disabled by configuration)")
+    }
 
-    // ===== 3. 插件配置 =====
+    syncFilesOnStartup(logger)
+
     configurePlugins()
 
-    // ===== 4. 认证配置 =====
     configureAuthentication()
 
-    // ===== 5. 异常处理 =====
     configureExceptionHandling(logger)
 
-    // ===== 6. 路由配置 =====
     configureRouting()
 
-    // ===== 7. 启动信息 =====
     printBanner(logger)
 }
 
@@ -120,21 +123,31 @@ private fun Application.validateConfiguration(logger: org.slf4j.Logger) {
  */
 private fun Application.warmupDatabase(logger: org.slf4j.Logger) {
     try {
-        logger.info("🔥 Warming up database connection...")
+        logger.info("Warming up database connection...")
         val startTime = System.currentTimeMillis()
 
         // 从 Koin 获取 Database 实例，这会触发 HikariDataSource 和 Flyway 的初始化
+        val t1 = System.currentTimeMillis()
         val database by inject<Database>()
+        val t2 = System.currentTimeMillis()
+        logger.info("Ktorm Database.connect() took ${t2 - t1}ms")
 
-        // 执行一个简单的查询来确保连接池已就绪
+        // 预热连接池：获取并释放一个连接，触发连接池初始化
+        val t3 = System.currentTimeMillis()
         database.useConnection { conn ->
-            conn.prepareStatement("SELECT 1").execute()
+            // 使用 JDBC4 isValid() 方法，比 SELECT 1 更快
+            val isValid = conn.isValid(3) // 3 秒超时
+            if (!isValid) {
+                throw IllegalStateException("Database connection is not valid")
+            }
         }
+        val t4 = System.currentTimeMillis()
+        logger.info("Connection validation took ${t4 - t3}ms")
 
         val duration = System.currentTimeMillis() - startTime
-        logger.info("✅ Database warmup completed in ${duration}ms")
+        logger.info("Database warmup completed in ${duration}ms")
     } catch (e: Exception) {
-        logger.error("❌ Database warmup failed", e)
+        logger.error("Database warmup failed", e)
         throw e
     }
 }
@@ -169,6 +182,8 @@ private fun Application.configurePlugins() {
 
     // 允许请求体被多次读取
     install(DoubleReceive)
+    // 请求日志
+    install(RequestLogPlugin)
 
     // JSON 序列化
     install(ContentNegotiation) {
@@ -199,7 +214,7 @@ private fun Application.configurePlugins() {
 
     // 请求验证
     install(RequestValidation) {
-        validate<LoginBody> { body ->
+        validate<LoginReq> { body ->
             val errors = mutableListOf<String>()
             if (body.username.isBlank()) errors.add("username is blank")
             if (body.password.isBlank()) errors.add("password is blank")
@@ -307,21 +322,19 @@ private fun Application.configureExceptionHandling(logger: org.slf4j.Logger) {
  */
 private fun Application.configureRouting() {
     routing {
-        // ===== 静态文件服务 =====
         val uploadPath = this@configureRouting.environment.config.propertyOrNull("file.uploadPath")?.getString() ?: "uploads"
         staticFiles("/files", java.io.File(uploadPath))
 
-        // ===== 公开路由 =====
         systemRoutes()
 
         val database by inject<Database>()
         val cacheProvider by inject<CacheProvider>()
 
-        get("/health") {
+        get(AppApiRoutes.HEALTH) {
             call.respond(KResult.ok(mapOf("status" to "UP")))
         }
 
-        get("/ready") {
+        get(AppApiRoutes.READY) {
             val checks = linkedMapOf<String, String>()
             var ok = true
 
@@ -360,18 +373,59 @@ private fun Application.configureRouting() {
             }
         }
 
-        get("/") {
+        get(AppApiRoutes.ROOT) {
             call.respond(KResult.ok("Hello Kairowan-Ktor Enterprise!", "Welcome to Modular Architecture"))
         }
 
-        // ===== 需要认证的路由 =====
         authenticatedSystemRoutes()
 
-        authenticate {
-            generatorRoutes()
-            monitorRoutes()
-            dashboardRoutes()
+    }
+}
+
+private fun Application.syncFilesOnStartup(logger: org.slf4j.Logger) {
+    val config = environment.config
+    val syncEnabled = config.propertyOrNull("file.syncOnStartup")?.getString()?.toBoolean() ?: true
+    if (!syncEnabled) {
+        logger.info("File sync on startup skipped (disabled by configuration)")
+        return
+    }
+
+    val syncOnce = config.propertyOrNull("file.syncOnce")?.getString()?.toBoolean() ?: true
+    val uploadPath = config.propertyOrNull("file.uploadPath")?.getString() ?: "uploads"
+    val markerName = config.propertyOrNull("file.syncMarker")?.getString() ?: ".kairowan_file_sync.done"
+    val markerFile = File(uploadPath, markerName)
+
+    if (syncOnce && markerFile.exists()) {
+        logger.info("File sync on startup skipped (syncOnce enabled and marker exists)")
+        return
+    }
+
+    val uploadDir = File(uploadPath)
+    if (!uploadDir.exists() || !uploadDir.isDirectory) {
+        logger.warn("File sync skipped: upload path not found: {}", uploadDir.absolutePath)
+        return
+    }
+
+    try {
+        val fileSyncService by inject<FileSyncService>()
+        val fileUrlPrefix = config.propertyOrNull("file.urlPrefix")?.getString() ?: "http://localhost:8080/files"
+        val result = runBlocking {
+            fileSyncService.syncFilesFromDisk(
+                uploadPath = uploadPath,
+                fileUrlPrefix = fileUrlPrefix,
+                defaultUserId = 1,
+                defaultUserName = "系统",
+                clearBefore = true,
+                excludeFileNames = setOf(markerName)
+            )
         }
+        logger.info("File sync completed: {}", result)
+        if (syncOnce) {
+            markerFile.parentFile?.mkdirs()
+            markerFile.writeText("synced at ${java.time.LocalDateTime.now()}")
+        }
+    } catch (e: Exception) {
+        logger.error("File sync failed", e)
     }
 }
 
@@ -379,7 +433,7 @@ private fun Application.configureRouting() {
  * 打印启动信息
  */
 private fun Application.printBanner(logger: org.slf4j.Logger) {
-    println("""
+    logger.info("""
       _  __     _
      | |/ /    (_)
      | ' / __ _ _ _ __ _____      ____ _ _ __

@@ -1,8 +1,8 @@
-package com.kairowan.ktor.framework.web.service
+package com.kairowan.system.service
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.kairowan.ktor.framework.security.LoginUser
+import com.kairowan.core.framework.security.LoginUser
 import io.ktor.server.config.*
 import java.util.*
 

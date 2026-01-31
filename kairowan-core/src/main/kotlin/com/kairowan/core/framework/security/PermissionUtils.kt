@@ -1,7 +1,7 @@
-package com.kairowan.ktor.framework.security
+package com.kairowan.core.framework.security
 
-import com.kairowan.ktor.common.KResult
-import com.kairowan.ktor.common.constant.ResultCode
+import com.kairowan.common.KResult
+import com.kairowan.common.constant.ResultCode
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.response.*
@@ -57,7 +57,7 @@ fun LoginUser.hasRole(role: String): Boolean {
 
 /**
  * 权限校验路由扩展
- * 用法: requirePermission("system:user:add") { ... }
+ * 用法: requirePermission("system:user:add")
  */
 fun Route.requirePermission(permission: String, build: Route.() -> Unit): Route {
     val route = createChild(PermissionSelector(permission))
@@ -75,7 +75,7 @@ fun Route.requirePermission(permission: String, build: Route.() -> Unit): Route 
 
 /**
  * 角色校验路由扩展
- * 用法: requireRole("admin") { ... }
+ * 用法: requireRole("admin")
  */
 fun Route.requireRole(role: String, build: Route.() -> Unit): Route {
     val route = createChild(RoleSelector(role))
@@ -89,24 +89,4 @@ fun Route.requireRole(role: String, build: Route.() -> Unit): Route {
     }
     route.build()
     return route
-}
-
-/**
- * 权限选择器 (用于路由匹配)
- */
-private class PermissionSelector(private val permission: String) : RouteSelector() {
-    override fun evaluate(context: RoutingResolveContext, segmentIndex: Int): RouteSelectorEvaluation {
-        return RouteSelectorEvaluation.Transparent
-    }
-    override fun toString(): String = "(permission:$permission)"
-}
-
-/**
- * 角色选择器 (用于路由匹配)
- */
-private class RoleSelector(private val role: String) : RouteSelector() {
-    override fun evaluate(context: RoutingResolveContext, segmentIndex: Int): RouteSelectorEvaluation {
-        return RouteSelectorEvaluation.Transparent
-    }
-    override fun toString(): String = "(role:$role)"
 }

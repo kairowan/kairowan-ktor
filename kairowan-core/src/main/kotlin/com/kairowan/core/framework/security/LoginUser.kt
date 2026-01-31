@@ -1,18 +1,15 @@
-package com.kairowan.ktor.framework.security
+package com.kairowan.core.framework.security
 
-import com.kairowan.ktor.framework.web.domain.SysUser
 import io.ktor.server.auth.*
 
 /**
- * 登录用户身份信息
- * @author Kairowan
- * @date 2026-01-17
+ * 登录用户信息
+ * 用于 JWT 认证后的用户身份
  */
 data class LoginUser(
     val userId: Int,
     val username: String,
-    val user: SysUser? = null,
+    val user: Any? = null,
     val roles: Set<String> = emptySet(),
     val permissions: Set<String> = emptySet()
 ) : Principal
-

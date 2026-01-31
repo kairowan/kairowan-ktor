@@ -1,4 +1,4 @@
-package com.kairowan.ktor.common.constant
+package com.kairowan.common.constant
 
 /**
  * 统一状态码定义

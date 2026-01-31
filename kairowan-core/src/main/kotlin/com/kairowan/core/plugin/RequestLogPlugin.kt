@@ -1,4 +1,4 @@
-package com.kairowan.ktor.framework.web.plugin
+package com.kairowan.core.framework.web.plugin
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.core.JsonGenerator

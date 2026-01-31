@@ -1,6 +1,6 @@
-package com.kairowan.ktor.framework.web.service
+package com.kairowan.system.service
 
-import com.kairowan.ktor.core.cache.CacheProvider
+import com.kairowan.core.framework.cache.CacheProvider
 import java.awt.Color
 import java.awt.Font
 import java.awt.image.BufferedImage

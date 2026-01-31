@@ -1,6 +1,6 @@
-package com.kairowan.ktor.framework.web.domain
+package com.kairowan.system.domain
 
-import com.kairowan.ktor.common.utils.Excel
+import com.kairowan.common.utils.Excel
 
 /**
  * System User Export VO

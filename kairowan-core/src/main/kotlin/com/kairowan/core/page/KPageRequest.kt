@@ -1,4 +1,4 @@
-package com.kairowan.ktor.framework.web.page
+package com.kairowan.core.page
 
 /**
  * 分页查询对象

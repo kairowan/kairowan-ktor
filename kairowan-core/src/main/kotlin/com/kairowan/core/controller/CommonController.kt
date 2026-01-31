@@ -1,7 +1,8 @@
-package com.kairowan.ktor.framework.web.controller
+package com.kairowan.core.controller
 
-import com.kairowan.ktor.common.KResult
-import com.kairowan.ktor.common.constant.ResultCode
+import com.kairowan.common.KResult
+import com.kairowan.common.constant.ResultCode
+import com.kairowan.core.api.CoreApiRoutes
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
@@ -18,13 +19,17 @@ import java.util.*
  * @author Kairowan
  * @date 2026-01-17
  */
-class CommonController : KController() {
+class CommonController : KController(), PublicRouteController {
 
-    fun Route.routes() {
-        route("/common") {
+    override fun register(route: Route) {
+        route.routes()
+    }
+
+    private fun Route.routes() {
+        route(CoreApiRoutes.Common.ROOT) {
             
             // 上传文件
-            post("/upload") {
+            post(CoreApiRoutes.Common.UPLOAD) {
                 val multipart = call.receiveMultipart()
                 var fileName = ""
                 var url = ""
@@ -67,7 +72,7 @@ class CommonController : KController() {
             }
 
             // 下载文件
-            get("/download") {
+            get(CoreApiRoutes.Common.DOWNLOAD) {
                 val fileName = call.parameters["fileName"]
                 if (fileName.isNullOrBlank()) {
                     return@get call.respond(KResult.fail<Any>("文件名不能为空"))
@@ -88,8 +93,4 @@ class CommonController : KController() {
             }
         }
     }
-}
-
-fun Route.commonRoutes() {
-    CommonController().apply { routes() }
 }
