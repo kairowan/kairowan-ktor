@@ -29,7 +29,6 @@ class NotificationController : KController(), AuthenticatedRouteController {
         val notificationService by inject<NotificationService>()
 
         route(SystemApiRoutes.Notification.ROOT) {
-            // 获取通知列表
             get(SystemApiRoutes.Notification.LIST) {
                 val loginUser = call.principal<LoginUser>()
                     ?: return@get call.respond(KResult.fail<Any>("未登录"))
@@ -46,7 +45,6 @@ class NotificationController : KController(), AuthenticatedRouteController {
                 call.respond(KResult.ok(mapOf("total" to list.total, "rows" to list.rows)))
             }
 
-            // 获取通知统计
             get(SystemApiRoutes.Notification.STATS) {
                 val loginUser = call.principal<LoginUser>()
                     ?: return@get call.respond(KResult.fail<Any>("未登录"))
@@ -118,7 +116,6 @@ class NotificationController : KController(), AuthenticatedRouteController {
                 call.respond(KResult.ok<Any>(msg = "删除成功"))
             }
 
-            // 获取未读数量
             get(SystemApiRoutes.Notification.UNREAD_COUNT) {
                 val loginUser = call.principal<LoginUser>()
                     ?: return@get call.respond(KResult.fail<Any>("未登录"))

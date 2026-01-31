@@ -24,7 +24,6 @@ class CaptchaController : KController(), PublicRouteController {
     private fun Route.routes() {
         val captchaService by inject<CaptchaService>()
 
-        // 获取验证码 (公开接口，无需认证)
         get(SystemApiRoutes.Captcha.IMAGE, {
             tags = listOf("Captcha")
             summary = "获取验证码图片"

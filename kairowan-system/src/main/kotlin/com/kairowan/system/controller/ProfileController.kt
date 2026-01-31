@@ -30,7 +30,6 @@ class ProfileController : KController(), AuthenticatedRouteController {
         val profileService by inject<ProfileService>()
 
         route(SystemApiRoutes.Profile.ROOT) {
-            // 获取用户详细信息
             get(SystemApiRoutes.Profile.INFO) {
                 val loginUser = call.principal<LoginUser>()
                     ?: return@get call.respond(KResult.fail<Any>("未登录"))
@@ -125,7 +124,6 @@ class ProfileController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取操作日志
             get(SystemApiRoutes.Profile.LOGS) {
                 val loginUser = call.principal<LoginUser>()
                     ?: return@get call.respond(KResult.fail<Any>("未登录"))

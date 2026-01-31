@@ -68,7 +68,6 @@ class SysDeptService(private val database: Database) {
      * 新增部门
      */
     suspend fun save(dept: SysDept): Int = withContext(Dispatchers.IO) {
-        // 设置祖级列表
         val parentDept = database.sequenceOf(SysDepts).find { it.deptId eq dept.parentId }
         if (parentDept != null) {
             dept.ancestors = "${parentDept.ancestors},${parentDept.deptId}"

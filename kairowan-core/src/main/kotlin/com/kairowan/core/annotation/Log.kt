@@ -2,8 +2,7 @@ package com.kairowan.core.framework.web.annotation
 
 /**
  * 操作日志注解
- * 用于标记需要记录操作日志的方法
- * 
+ *
  * @author Kairowan
  * @date 2026-01-18
  */
@@ -23,9 +22,6 @@ annotation class Log(
     val isSaveResponseData: Boolean = true
 )
 
-/**
- * 业务类型枚举
- */
 enum class BusinessType(val code: Int, val desc: String) {
     OTHER(0, "其它"),
     INSERT(1, "新增"),

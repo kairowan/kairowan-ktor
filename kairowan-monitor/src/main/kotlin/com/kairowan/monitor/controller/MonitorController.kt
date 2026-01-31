@@ -37,7 +37,6 @@ class MonitorController : KController(), AuthenticatedRouteController {
         route(MonitorApiRoutes.Monitor.ROOT) {
             // ==================== 在线用户 ====================
             route(MonitorApiRoutes.Monitor.ONLINE) {
-                // 获取在线用户列表
                 requirePermission("monitor:online:list") {
                     get(MonitorApiRoutes.Monitor.ONLINE_LIST) {
                         val users = onlineUserService.getOnlineUsers()
@@ -45,7 +44,6 @@ class MonitorController : KController(), AuthenticatedRouteController {
                     }
                 }
 
-                // 获取在线用户数量
                 requirePermission("monitor:online:list") {
                     get(MonitorApiRoutes.Monitor.ONLINE_COUNT) {
                         val count = onlineUserService.getOnlineCount()
@@ -73,7 +71,6 @@ class MonitorController : KController(), AuthenticatedRouteController {
 
             // ==================== 定时任务 ====================
             route(MonitorApiRoutes.Job.ROOT) {
-                // 获取任务列表
                 requirePermission("monitor:job:list") {
                     get(MonitorApiRoutes.Job.LIST) {
                         val page = getPageRequest(call)
@@ -82,7 +79,6 @@ class MonitorController : KController(), AuthenticatedRouteController {
                     }
                 }
 
-                // 获取任务详情
                 requirePermission("monitor:job:query") {
                     get(MonitorApiRoutes.Job.DETAIL) {
                         val jobId = call.parameters["jobId"]?.toLongOrNull() ?: throw IllegalArgumentException("jobId is required")
@@ -91,7 +87,6 @@ class MonitorController : KController(), AuthenticatedRouteController {
                     }
                 }
 
-                // 获取运行中的任务
                 requirePermission("monitor:job:list") {
                     get(MonitorApiRoutes.Job.RUNNING) {
                         val jobs = jobService.getRunningJobs()
@@ -156,7 +151,6 @@ class MonitorController : KController(), AuthenticatedRouteController {
 
             // ==================== 操作日志 ====================
             route(MonitorApiRoutes.OperLog.ROOT) {
-                // 获取操作日志列表
                 requirePermission("monitor:operlog:list") {
                     get(MonitorApiRoutes.OperLog.LIST) {
                         val page = getPageRequest(call)
@@ -165,7 +159,6 @@ class MonitorController : KController(), AuthenticatedRouteController {
                     }
                 }
 
-                // 获取操作日志详情
                 requirePermission("monitor:operlog:query") {
                     get(MonitorApiRoutes.OperLog.DETAIL) {
                         val operId = call.parameters["operId"]?.toLongOrNull() ?: throw IllegalArgumentException("operId is required")
@@ -199,7 +192,6 @@ class MonitorController : KController(), AuthenticatedRouteController {
 
             // ==================== 登录日志 ====================
             route(MonitorApiRoutes.LoginInfo.ROOT) {
-                // 获取登录日志列表
                 requirePermission("monitor:logininfor:list") {
                     get(MonitorApiRoutes.LoginInfo.LIST) {
                         val page = getPageRequest(call)

@@ -30,7 +30,6 @@ class SysDictService(
      * 根据字典类型获取字典数据列表 (优先从缓存)
      */
     suspend fun getDictDataByType(dictType: String): List<SysDictData> {
-        // 先从缓存获取
         val cached = cache.get("$CACHE_PREFIX$dictType")
         if (cached != null) {
             return try {

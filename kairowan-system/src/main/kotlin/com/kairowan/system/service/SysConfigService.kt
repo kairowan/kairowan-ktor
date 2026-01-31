@@ -30,7 +30,6 @@ class SysConfigService(
      * 根据配置键获取配置值 (优先从缓存获取)
      */
     suspend fun getConfigValue(configKey: String): String? {
-        // 先从缓存获取
         val cached = cache.get("$CACHE_PREFIX$configKey")
         if (cached != null) {
             return cached

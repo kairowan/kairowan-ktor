@@ -89,7 +89,6 @@ class FileSyncService(private val database: Database) {
                         }
                     }
 
-                    // 获取文件信息
                     val fileName = file.name
                     val fileSize = file.length()
                     val fileType = FileUploadUtils.getFileType(fileName)

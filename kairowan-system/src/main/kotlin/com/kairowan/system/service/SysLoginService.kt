@@ -47,11 +47,9 @@ class SysLoginService(
             throw ServiceException(ResultCode.USER_PASSWORD_NOT_MATCH)
         }
         
-        // 获取权限
         val permissions = permissionService.getMenuPermissions(user.userId)
         val roles = permissionService.getRoleKeys(user.userId)
         
-        // 创建登录用户
         val loginUser = LoginUser(
             userId = user.userId,
             username = user.userName,
@@ -60,7 +58,6 @@ class SysLoginService(
             permissions = permissions
         )
         
-        // 生成 Token
         tokenService.createToken(loginUser)
     }
 

@@ -104,7 +104,6 @@ class ToolFileController : KController(), AuthenticatedRouteController {
                                         uploadPath
                                     )
 
-                                    // 获取文件类型
                                     val fileType = FileUploadUtils.getFileType(fileName)
                                     val fileUrl = "$fileUrlPrefix/$relativePath"
 
@@ -143,7 +142,6 @@ class ToolFileController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取文件列表
             get(SystemApiRoutes.ToolFile.LIST) {
                 val type = call.request.queryParameters["type"]
                 val keyword = call.request.queryParameters["keyword"]
@@ -161,7 +159,6 @@ class ToolFileController : KController(), AuthenticatedRouteController {
                 val file = fileService.getFileById(fileId)
                     ?: return@get call.respond(HttpStatusCode.NotFound, KResult.fail<Any>("文件不存在"))
 
-                // 获取文件路径
                 val uploadPath = call.application.environment.config.propertyOrNull("file.uploadPath")?.getString()
                     ?: "uploads"
 

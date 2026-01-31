@@ -21,13 +21,11 @@ class DashboardService(private val database: Database) {
      * 获取统计数据
      */
     suspend fun getStats(): Map<String, Any> = withContext(Dispatchers.IO) {
-        // 获取用户总数
         val userCount = database.from(SysUsers)
             .select(count())
             .map { it.getInt(1) }
             .firstOrNull() ?: 0
 
-        // 获取今日访问（今日登录次数）
         val visitCount = database.from(SysLoginLogs)
             .select(count())
             .where {

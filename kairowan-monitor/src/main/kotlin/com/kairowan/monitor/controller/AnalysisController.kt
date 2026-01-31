@@ -27,7 +27,6 @@ class AnalysisController : KController(), AuthenticatedRouteController {
         val analysisService by inject<AnalysisService>()
 
         route(MonitorApiRoutes.Analysis.ROOT) {
-            // 获取数据概览
             requirePermission("monitor:analysis:view") {
                 get(MonitorApiRoutes.Analysis.OVERVIEW) {
                     val startDate = call.request.queryParameters["startDate"]
@@ -38,7 +37,6 @@ class AnalysisController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取销售趋势数据
             requirePermission("monitor:analysis:view") {
                 get(MonitorApiRoutes.Analysis.SALES_TREND) {
                     val startDate = call.request.queryParameters["startDate"]
@@ -50,7 +48,6 @@ class AnalysisController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取分类占比数据
             requirePermission("monitor:analysis:view") {
                 get(MonitorApiRoutes.Analysis.CATEGORY) {
                     val category = analysisService.getCategoryData()
@@ -58,7 +55,6 @@ class AnalysisController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取地区销售数据
             requirePermission("monitor:analysis:view") {
                 get(MonitorApiRoutes.Analysis.REGION) {
                     val region = analysisService.getRegionData()
@@ -66,7 +62,6 @@ class AnalysisController : KController(), AuthenticatedRouteController {
                 }
             }
 
-            // 获取用户增长数据
             requirePermission("monitor:analysis:view") {
                 get(MonitorApiRoutes.Analysis.USER_GROWTH) {
                     val growth = analysisService.getUserGrowth()

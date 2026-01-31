@@ -34,7 +34,6 @@ class FileController : KController(), AuthenticatedRouteController {
         val fileService by inject<FileService>()
 
         route(SystemApiRoutes.File.ROOT) {
-            // 获取文件列表
             get(SystemApiRoutes.File.LIST) {
                 val type = call.request.queryParameters["type"]
                 val keyword = call.request.queryParameters["keyword"]
@@ -44,7 +43,6 @@ class FileController : KController(), AuthenticatedRouteController {
                 call.respond(KResult.ok(mapOf("total" to list.total, "rows" to list.rows)))
             }
 
-            // 获取文件统计
             get(SystemApiRoutes.File.STATS) {
                 val stats = fileService.getStats()
                 call.respond(KResult.ok(stats))
