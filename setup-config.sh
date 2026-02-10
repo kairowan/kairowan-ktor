@@ -9,8 +9,8 @@ echo "🚀 Kairowan-Ktor 配置向导"
 echo "=========================="
 echo ""
 
-CONFIG_FILE="kairowan-app/src/main/resources/application.conf"
-EXAMPLE_FILE="kairowan-app/src/main/resources/application.conf.example"
+CONFIG_FILE="kairowan-app/src/main/resources/application.yaml"
+EXAMPLE_FILE="kairowan-app/src/main/resources/application.yaml.example"
 
 # 检查配置文件是否已存在
 if [ -f "$CONFIG_FILE" ]; then

@@ -9,7 +9,7 @@ import org.ktorm.database.Database
 import org.slf4j.LoggerFactory
 
 /**
- * 代码生成器服务 (性能优化版)
+ * 代码生成器服务
  * Generator Service with Cache
  *
  * @author Kairowan

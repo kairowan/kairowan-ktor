@@ -76,11 +76,11 @@ mysql -u root -p kairowan_ktor < kairowan-app/src/main/resources/sql/init_comple
 
 ```bash
 # 1. 复制配置模板
-cp kairowan-app/src/main/resources/application.conf.example \
-   kairowan-app/src/main/resources/application.conf
+cp kairowan-app/src/main/resources/application.yaml.example \
+   kairowan-app/src/main/resources/application.yaml
 
 # 2. 编辑配置文件
-vim kairowan-app/src/main/resources/application.conf
+vim kairowan-app/src/main/resources/application.yaml
 ```
 
 **必须修改的配置项：**
@@ -236,7 +236,7 @@ lsof -i :8080
 kill -9 <PID>
 
 # 或修改配置文件中的端口
-# application.conf
+# application.yaml
 ktor:
   deployment:
     port: 8081  # 改为其他端口
@@ -258,16 +258,16 @@ ktor:
 
 ### 问题 5: 找不到配置文件
 
-**错误信息**: `application.conf not found`
+**错误信息**: `application.yaml not found`
 
 **解决方案**:
 ```bash
 # 确保已复制配置模板
-cp kairowan-app/src/main/resources/application.conf.example \
-   kairowan-app/src/main/resources/application.conf
+cp kairowan-app/src/main/resources/application.yaml.example \
+   kairowan-app/src/main/resources/application.yaml
 
 # 检查文件是否存在
-ls -la kairowan-app/src/main/resources/application.conf
+ls -la kairowan-app/src/main/resources/application.yaml
 ```
 
 ---

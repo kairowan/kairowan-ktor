@@ -163,10 +163,10 @@ git clone https://github.com/kairowan/kairowan-admin.git
 
 **首先复制配置模板：**
 ```bash
-cp kairowan-app/src/main/resources/application.conf.example kairowan-app/src/main/resources/application.conf
+cp kairowan-app/src/main/resources/application.yaml.example kairowan-app/src/main/resources/application.yaml
 ```
 
-**然后编辑 `kairowan-app/src/main/resources/application.conf`，修改以下配置：**
+**然后编辑 `kairowan-app/src/main/resources/application.yaml`，修改以下配置：**
 
 ```yaml
 db:
@@ -375,7 +375,7 @@ kairowan-ktor/
         │   ├── Application.kt       # 主入口
         │   └── AppModules.kt        # Koin 依赖注入配置
         └── resources/
-            ├── application.conf     # 配置文件
+            ├── application.yaml     # 配置文件
             ├── logback.xml          # 日志配置
             ├── db/migration/        # Flyway 数据库迁移脚本 (7个版本)
             └── sql/                 # SQL 初始化脚本

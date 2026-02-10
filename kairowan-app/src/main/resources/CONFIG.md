@@ -4,10 +4,10 @@
 
 1. 复制配置模板文件：
 ```bash
-cp kairowan-app/src/main/resources/application.conf.example kairowan-app/src/main/resources/application.conf
+cp kairowan-app/src/main/resources/application.yaml.example kairowan-app/src/main/resources/application.yaml
 ```
 
-2. 编辑 `application.conf`，修改以下敏感信息：
+2. 编辑 `application.yaml`，修改以下敏感信息：
 
 ### 必须修改的配置项
 
@@ -123,5 +123,5 @@ docker run -d \
 ## 配置文件优先级
 
 1. 环境变量（最高优先级）
-2. `application.conf`
-3. `application.conf.example`（仅作为模板，不会被加载）
+2. `application.yaml`
+3. `application.yaml.example`（仅作为模板，不会被加载）

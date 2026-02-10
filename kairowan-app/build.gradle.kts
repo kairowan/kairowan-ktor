@@ -29,6 +29,7 @@ dependencies {
     implementation(Libs.ktorServerRateLimit)
     implementation(Libs.ktorServerWebsockets)
     implementation(Libs.ktorServerMetrics)
+    implementation(Libs.ktorServerConfigYaml)
 
     // Prometheus
     implementation(Libs.prometheus)

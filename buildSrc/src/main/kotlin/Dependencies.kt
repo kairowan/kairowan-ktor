@@ -39,6 +39,7 @@ object Libs {
     const val ktorSerializationJackson = "io.ktor:ktor-serialization-jackson-jvm"
     const val ktorServerDoubleReceive = "io.ktor:ktor-server-double-receive-jvm"
     const val ktorServerCors = "io.ktor:ktor-server-cors-jvm"
+    const val ktorServerConfigYaml = "io.ktor:ktor-server-config-yaml-jvm"
 
     // Ktor Client
     const val ktorClientCore = "io.ktor:ktor-client-core"

@@ -1,4 +1,4 @@
-package com.kairowan.monitor.domain
+    package com.kairowan.monitor.domain
 
 import org.ktorm.schema.Table
 import org.ktorm.schema.long
