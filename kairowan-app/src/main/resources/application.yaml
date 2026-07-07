@@ -25,9 +25,9 @@ db:
   # - cacheServerConfiguration=true: 缓存服务器配置
   # - elideSetAutoCommits=true: 省略不必要的 setAutoCommit 调用
   # - maintainTimeStats=false: 禁用时间统计，减少开销
-  url: "jdbc:mysql://103.242.12.10:3306/kairowan_ktor?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&rewriteBatchedStatements=true&cacheResultSetMetadata=true&cacheServerConfiguration=true&elideSetAutoCommits=true&maintainTimeStats=false"
-  user: "root"
-  password: "Ghn20010413."
+  url: ""
+  user: ""
+  password: ""
 
   # Flyway 配置
   flyway:
@@ -67,9 +67,9 @@ db:
 
 # Redis Configuration (优化版)
 redis:
-  host: "103.242.12.10"
+  host: ""
   port: 6379
-  password: "ghn20010413"
+  password: ""
   timeout: 3000
 
   # 连接池配置
